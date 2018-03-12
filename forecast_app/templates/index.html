@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redis Test</title>
+</head>
+
+<body>
+
+
+<h1>{{ count }} @ {{ last_update }}</h1>
+<p>
+    Queue: {{ queue }}
+</p>
+
+<form class="form-inline" method="POST" enctype="multipart/form-data"
+      action="{% url 'increment-counter-web' %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <button class="form-control btn btn-success" type="submit">Increment Web</button>
+    </div>
+</form>
+
+<form class="form-inline" method="POST" enctype="multipart/form-data"
+      action="{% url 'increment-counter-rq' %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <button class="form-control btn btn-success" type="submit">Increment RQ</button>
+    </div>
+</form>
+
+
+</body>
+
+</html>
