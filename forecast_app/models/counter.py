@@ -1,6 +1,17 @@
+import logging
 import time
 
 from django.db import models
+
+
+logger = logging.getLogger(__name__)
+
+
+def basic_str(obj):
+    """
+    Handy for writing quick and dirty __str__() implementations.
+    """
+    return obj.__class__.__name__ + ': ' + obj.__repr__()
 
 
 class Counter(models.Model):
@@ -8,10 +19,18 @@ class Counter(models.Model):
     A simple model that's used as a singleton.
     """
     count = models.IntegerField(help_text="The current count.", default=0)
+
+    # auto_now: Automatically set the field to now every time the object is saved.
     last_update = models.DateTimeField(help_text="Last time the counter was updated.", auto_now=True)
+
 
     def __repr__(self):
         return str((self.pk, self.count, self.last_update))
+
+
+    def __str__(self):  # todo
+        return basic_str(self)
+
 
     @classmethod
     def get_count_and_last_update(cls):
@@ -21,13 +40,16 @@ class Counter(models.Model):
 
     @classmethod
     def increment_count(cls):
+        """
+        Simple function that simulates a long-running operation.
+        """
         singleton = cls._get_singleton_record()
-        print("increment_count(): singleton={}".format(singleton))
-        time.sleep(2)  # simulate long-running function
-        print("  back awake".format())
-        singleton.count += 1  # last_update handled by auto_nows
-        singleton.save()
-        print("  done".format())
+        logger.info("increment_count(): started. singleton={}".format(singleton))
+        time.sleep(2)
+        logger.info("increment_count(): back awake".format())
+        singleton.count += 1
+        singleton.save()  # updates last_update via auto_now
+        logger.info("increment_count(): done. singleton={}".format(singleton))
 
 
     @classmethod

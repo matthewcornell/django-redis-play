@@ -6,8 +6,8 @@ from forecast_app.models import Counter
 
 def index(request):
     count, last_update = Counter.get_count_and_last_update()
-    queue = django_rq.get_queue('default')
-    conn = django_rq.get_connection('default')
+    queue = django_rq.get_queue()  # name='default'
+    conn = django_rq.get_connection()  # name='default'
     return render(request,
                   'index.html',
                   context={'count': count,
@@ -29,5 +29,5 @@ def increment_counter_immediate(request):
 
 
 def increment_counter_rq(request):
-    django_rq.enqueue(Counter.increment_count)
+    django_rq.enqueue(Counter.increment_count)  # name='default'
     return redirect('index')
