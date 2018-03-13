@@ -10,7 +10,9 @@
 
 <h1>{{ count }} @ {{ last_update }}</h1>
 <p>
-    Queue: {{ queue }}
+    Queue: {{ queue }}. Jobs: {{ queue.jobs }}
+    <br>
+    Connection: {{ conn }}
 </p>
 
 <form class="form-inline" method="POST" enctype="multipart/form-data"
