@@ -12,10 +12,7 @@ DATABASES = {
 
 RQ_QUEUES = {
     'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-        # 'PASSWORD': 'some-password',
+        'URL': 'redis://localhost:6379/0',
         'DEFAULT_TIMEOUT': 360,
     },
 }
