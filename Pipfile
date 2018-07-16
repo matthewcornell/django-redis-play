@@ -12,7 +12,7 @@ dj-database-url = "*"
 django = "==1.11"
 django-rq = "*"
 gunicorn = "*"
-psycopg2 = "*"
+"psycopg2-binary" = "*"
 rq = "*"
 whitenoise = "*"
 
