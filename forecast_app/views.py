@@ -22,3 +22,9 @@ def increment_counter(request, **kwargs):
     else:
         Counter.increment_count()
     return redirect('index')
+
+
+def clear_rq(request):
+    queue = django_rq.get_queue()  # name='default'
+    queue.empty()
+    return redirect('index')
