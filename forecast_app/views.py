@@ -18,16 +18,7 @@ def index(request):
 
 def increment_counter(request, **kwargs):
     if kwargs['is_rq']:
-        return increment_counter_rq(request)
+        django_rq.enqueue(Counter.increment_count)  # name='default'
     else:
-        return increment_counter_immediate(request)
-
-
-def increment_counter_immediate(request):
-    Counter.increment_count()
-    return redirect('index')
-
-
-def increment_counter_rq(request):
-    django_rq.enqueue(Counter.increment_count)  # name='default'
+        Counter.increment_count()
     return redirect('index')
