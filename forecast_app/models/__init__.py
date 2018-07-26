@@ -2,5 +2,6 @@
 
 
 from .counter import Counter
+from .upload_file_job import UploadFileJob
 
 # __all__ = ['Article', 'Publication']

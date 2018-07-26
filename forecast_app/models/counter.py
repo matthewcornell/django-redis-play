@@ -41,15 +41,15 @@ class Counter(models.Model):
     @classmethod
     def increment_count(cls):
         """
-        Simple function that simulates a long-running operation.
+        enqueue() helper function. simulates a long-running operation
         """
         singleton = cls._get_singleton_record()
-        logger.info("increment_count(): started. singleton={}".format(singleton))
+        logger.debug("increment_count(): started. singleton={}".format(singleton))
         time.sleep(2)
-        logger.info("increment_count(): back awake".format())
+        logger.debug("increment_count(): back awake".format())
         singleton.count += 1
         singleton.save()  # updates last_update via auto_now
-        logger.info("increment_count(): done. singleton={}".format(singleton))
+        logger.debug("increment_count(): done. singleton={}".format(singleton))
 
 
     @classmethod
