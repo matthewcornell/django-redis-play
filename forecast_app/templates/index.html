@@ -8,6 +8,14 @@
 <body>
 
 
+{% if messages %}
+    <h1>Messages</h1>
+    {% for message in messages %}
+        <div class="alert alert-{{ message.level_tag }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+
 <h1>{{ count }} @ {{ last_update }}</h1>
 <p>
     Queue: {{ queue }}. Jobs: {{ queue.jobs }}
@@ -15,20 +23,29 @@
     Connection: {{ conn }}
 </p>
 
+
+<hr>
+
 <form class="form-inline" method="POST" enctype="multipart/form-data"
       action="{% url 'increment-counter-web' %}">
     {% csrf_token %}
-    <div class="form-group">
-        <button class="form-control btn btn-success" type="submit">Increment Web</button>
-    </div>
+    <button class="form-control btn btn-success" type="submit">Increment Web</button>
 </form>
 
 <form class="form-inline" method="POST" enctype="multipart/form-data"
       action="{% url 'increment-counter-rq' %}">
     {% csrf_token %}
-    <div class="form-group">
-        <button class="form-control btn btn-success" type="submit">Increment RQ</button>
-    </div>
+    <button class="form-control btn btn-success" type="submit">Increment RQ</button>
+</form>
+
+
+<hr>
+
+<form class="form-inline" method="POST" enctype="multipart/form-data"
+      action="{% url 'upload-forecast' %}">
+    {% csrf_token %}
+    <button class="form-control btn btn-success" type="submit">Upload</button>
+    <input type="file" name="data_file">
 </form>
 
 

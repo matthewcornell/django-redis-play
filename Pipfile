@@ -12,9 +12,10 @@ dj-database-url = "*"
 django = "==1.11"
 django-rq = "*"
 gunicorn = "*"
-psycopg2 = "*"
 rq = "*"
 whitenoise = "*"
+"boto3" = "*"
+"psycopg2-binary" = "*"
 
 
 [dev-packages]
