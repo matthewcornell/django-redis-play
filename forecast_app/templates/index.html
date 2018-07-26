@@ -13,15 +13,8 @@
     {% for message in messages %}
         <div class="alert alert-{{ message.level_tag }}">{{ message }}</div>
     {% endfor %}
-{% endif %}
+{% endif %}<h1>Submit</h1>
 
-
-<h1>{{ count }} @ {{ last_update }}</h1>
-<p>
-    Queue: {{ queue }}. Jobs: {{ queue.jobs }}
-    <br>
-    Connection: {{ conn }}
-</p>
 
 
 <hr>
@@ -47,6 +40,29 @@
     <button class="form-control btn btn-success" type="submit">Upload</button>
     <input type="file" name="data_file">
 </form>
+
+<form class="form-inline" method="POST" enctype="multipart/form-data"
+      action="{% url 'clear-rq' %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <button class="form-control btn btn-success" type="submit">Clear RQ</button>
+    </div>
+</form>
+
+
+<h1>{{ count }} @ {{ last_update }}</h1>
+
+<ul>
+    <li>Connection: {{ conn }}</li>
+    <li>Queue: {{ queue }}</li>
+    <li>Jobs: ({{ queue.jobs|length }}):
+        <ul>
+            {% for job in queue.jobs %}
+                <li>{{ job }}</li>
+            {% endfor %}
+        </ul>
+    </li>
+</ul>
 
 
 </body>

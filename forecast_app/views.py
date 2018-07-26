@@ -28,20 +28,15 @@ def index(request):
 
 def increment_counter(request, **kwargs):
     if kwargs['is_rq']:
-        return increment_counter_rq(request)
+        django_rq.enqueue(Counter.increment_count)  # name='default'
     else:
-        return increment_counter_immediate(request)
-
-
-def increment_counter_immediate(request):
-    Counter.increment_count()
-    messages.success(request, 'Updated the counter immediately (in web dyno).')
+        Counter.increment_count()
     return redirect('index')
 
 
-def increment_counter_rq(request):
-    django_rq.enqueue(Counter.increment_count)  # name='default'
-    messages.success(request, 'Enqueued the counter increment.')
+def clear_rq(request):
+    queue = django_rq.get_queue()  # name='default'
+    queue.empty()
     return redirect('index')
 
 

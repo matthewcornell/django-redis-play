@@ -10,6 +10,10 @@ DATABASES = {
     }
 }
 
+#
+# ---- Django-RQ config ----
+#
+
 RQ_QUEUES = {
     'default': {
         'URL': 'redis://localhost:6379/0',
