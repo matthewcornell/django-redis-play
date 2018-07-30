@@ -10,10 +10,10 @@
 
 <h1>S3</h1>
 
-<p>Keys: ({{ s3_bucket_keys|length }})</p>
+<p>Objects: ({{ s3_objects|length }})</p>
 <ul>
-    {% for s3_bucket_key in s3_bucket_keys %}
-        <li>{{ s3_bucket_key }}</li>
+    {% for s3_object in s3_objects %}
+        <li>{{ s3_object }}</li>
     {% endfor %}
 </ul>
 

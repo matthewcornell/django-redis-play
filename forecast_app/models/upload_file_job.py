@@ -4,6 +4,7 @@ import time
 
 import boto3
 from django.db import models
+from django.db.models import BooleanField
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.shortcuts import get_object_or_404
@@ -20,9 +21,9 @@ class UploadFileJob(models.Model):
     """
     Holds information about user file uploads. Accessed by worker jobs when processing those files.
     """
-    created_at = models.DateTimeField(help_text="When the file was uploaded.", auto_now_add=True)
-
-    filename = models.CharField(max_length=200, help_text="Original name of the uploaded file.")
+    #
+    # general task-related fields
+    #
 
     PENDING = 0
     S3_FILE_UPLOADED = 1
@@ -30,24 +31,34 @@ class UploadFileJob(models.Model):
     S3_FILE_DOWNLOADED = 3
     FORECAST_LOADED = 4
 
-    FAILED_S3_FILE_UPLOAD = 6
-    FAILED_ENQUEUE = 7
-    FAILED_PROCESS_FILE = 8
-
     STATUS_CHOICES = (
         (PENDING, 'PENDING'),
         (S3_FILE_UPLOADED, 'S3_FILE_UPLOADED'),
         (QUEUED, 'QUEUED'),
         (S3_FILE_DOWNLOADED, 'S3_FILE_DOWNLOADED'),
         (FORECAST_LOADED, 'FORECAST_LOADED'),
-
-        (FAILED_S3_FILE_UPLOAD, 'FAILED_S3_FILE_UPLOAD'),
-        (FAILED_ENQUEUE, 'FAILED_ENQUEUE'),
-        (FAILED_PROCESS_FILE, 'FAILED_PROCESS_FILE'),
     )
     status = models.IntegerField(default=PENDING, choices=STATUS_CHOICES)
 
-    is_deleted = models.BooleanField(default=False)  # True if the S3 file was ever deleted by this app
+    created_at = models.DateTimeField(auto_now_add=True)  # when this instance was created. basically the submit date
+
+    updated_at = models.DateTimeField(auto_now=True)  # time of last save(). basically last time status changed
+
+    is_failed = BooleanField(default=False)
+
+    failure_message = models.CharField(max_length=2000)  # non-empty if is_failed
+
+    #
+    # user-related fields
+    #
+
+    # user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)  # user who submitted
+
+    #
+    # app-specific fields
+    #
+
+    filename = models.CharField(max_length=200)  # original name of the uploaded file
 
 
     # model_pk = models.IntegerField()  # placeholder for: forecast_model = models.ForeignKey(ForecastModel, ...)
@@ -58,14 +69,12 @@ class UploadFileJob(models.Model):
     #     null=True, blank=True,
     #     help_text="The optional database date at which models should work with for the timezero_date.")  # nullable
 
-    # user = models.ForeignKey(User, blank=True, null=True, help_text="The User who submitted the task",
-    #                          on_delete=models.SET_NULL)
-
-    # todo new_forecast_pk (FK, NULL), enqueued_at, etc.
+    # new_forecast_pk (FK, NULL)  # aka the result
 
 
     def __repr__(self):
-        return str((self.pk, self.created_at, self.filename, self.status_as_str(), self.is_deleted))
+        return str((self.pk, self.created_at, self.updated_at, self.filename, self.status_as_str(),
+                    self.is_failed, self.failure_message))
 
 
     def __str__(self):  # todo
@@ -102,14 +111,16 @@ class UploadFileJob(models.Model):
 
     def delete_s3_object(self):
         """
-        Deletes the S3 object corresponding to me
+        Deletes the S3 object corresponding to me. note that we do not log delete failures in the instance. This is b/c
+        failing to delete a temporary file is not a failure to process an uploaded file. Though it's not clear when
+        delete would fail but everything preceding it would succeed...
+
+        Apps can infer this condition by looking for non-deleted S3 objects whose status != FORECAST_LOADED .
         """
         try:
             logger.debug("delete_s3_object(): Started: {}".format(self))
-            s3 = boto3.client('s3')
-            s3.delete_object(Bucket=S3_UPLOAD_BUCKET_NAME, Key=self.s3_key())
-            self.is_deleted = True
-            self.save()
+            s3 = boto3.resource('s3')
+            s3.Object(S3_UPLOAD_BUCKET_NAME, self.s3_key()).delete()
             logger.debug("delete_s3_object(): Done: {}".format(self))
         except Exception as exc:
             logger.debug("delete_s3_object(): Failed: {}, {}".format(exc, self))
@@ -128,30 +139,30 @@ class UploadFileJob(models.Model):
             try:
                 logger.debug("process_uploaded_file(): Downloading from S3: {}, {}. upload_file_job={}"
                              .format(S3_UPLOAD_BUCKET_NAME, upload_file_job.s3_key(), upload_file_job))
-                s3 = boto3.client('s3')
+                s3 = boto3.client('s3')  # using client here instead of higher-level resource b/c want to save to a fp
                 s3.download_fileobj(S3_UPLOAD_BUCKET_NAME, upload_file_job.s3_key(), temp_fp)
                 upload_file_job.status = UploadFileJob.S3_FILE_DOWNLOADED
                 upload_file_job.save()
 
                 logger.debug("process_uploaded_file(): Loading forecast. upload_file_job={}".format(upload_file_job))
-                time.sleep(10)  # simulates a long-running operation
-                # new_forecast = load_forecast()  # todo
+                time.sleep(5)  # simulates a long-running operation
+                # new_forecast = load_forecast()  # todo the actual work!
                 # upload_file_job.new_forecast_pk = new_forecast.pk
                 upload_file_job.status = UploadFileJob.FORECAST_LOADED  # yay!
                 upload_file_job.save()
 
                 logger.debug("process_uploaded_file(): Done. upload_file_job={}".format(upload_file_job))
             except Exception as exc:
-                logger.debug("process_uploaded_file(): Error: {}. upload_file_job={}".format(exc, upload_file_job))
-                upload_file_job.status = UploadFileJob.FAILED_PROCESS_FILE
+                failure_message = "process_uploaded_file(): FAILED_PROCESS_FILE: Error: {}. upload_file_job={}" \
+                    .format(exc, upload_file_job)
+                upload_file_job.is_failed = True
+                upload_file_job.failure_message = failure_message
                 upload_file_job.save()
+                logger.debug(failure_message)
             finally:
                 upload_file_job.delete_s3_object()  # NB: in current thread
 
 
-# try to delete the corresponding S3 object
 @receiver(pre_delete, sender=UploadFileJob)
 def delete_s3_obj_for_upload_file_job(sender, instance, using, **kwargs):
-    logger.debug("delete_s3_obj_for_upload_file_job(): Started. sender={}, instance={}, using={}, kwargs={}"
-                 .format(sender, instance, using, kwargs))
-    instance.delete_s3_object()
+    instance.delete_s3_object()  # try to delete the corresponding S3 object

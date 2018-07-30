@@ -48,7 +48,7 @@ class Counter(models.Model):
         time.sleep(2)
         logger.debug("increment_count(): back awake".format())
         singleton.count += 1
-        singleton.save()  # updates last_update via auto_now
+        singleton.save()  # updates updated_at via auto_now
         logger.debug("increment_count(): done. singleton={}".format(singleton))
 
 

@@ -19,7 +19,7 @@ def index(request):
     return render(request,
                   'index.html',
                   context={'count': count,
-                           'last_update': last_update,
+                           'updated_at': last_update,
                            'queue': queue,
                            'conn': conn,
                            'upload_file_jobs': UploadFileJob.objects.all(),
@@ -27,13 +27,13 @@ def index(request):
                   )
 
 
-def list_s3_buckets(request):
-    keys = []
+def list_s3_bucket_info(request):
+    s3_objects = []
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(S3_UPLOAD_BUCKET_NAME)
-    for bucket in bucket.objects.all():
-        keys.append(bucket)
-    return render(request, 's3.html', context={'s3_bucket_keys': keys})
+    for s3_object in bucket.objects.all():
+        s3_objects.append(s3_object)
+    return render(request, 's3.html', context={'s3_objects': s3_objects})
 
 
 #
@@ -78,6 +78,9 @@ def empty_rq(request):
 # file upload-related functions
 #
 
+MAX_UPLOAD_FILE_SIZE = 5E+06
+
+
 def delete_file_jobs(request):
     save_message_and_log_debug(request, "delete_file_jobs(): Deleting all UploadFileJobs")
     UploadFileJob.objects.all().delete()  # pre_delete() signal deletes corresponding S3 object (the uploaded file)
@@ -98,32 +101,41 @@ def upload_file(request):
         return redirect('index')
 
     data_file = request.FILES['data_file']  # InMemoryUploadedFile or TemporaryUploadedFile
-    logger.debug("upload_file(): Got data_file={!r}".format(data_file))
+    logger.debug("upload_file(): Got data_file: name={!r}, size={}, content_type={}"
+                 .format(data_file.name, data_file.size, data_file.content_type))
+    if data_file.size > MAX_UPLOAD_FILE_SIZE:
+        save_message_and_log_debug(request, "upload_file(): File was too large. size={}, max={}."
+                                   .format(data_file.size, MAX_UPLOAD_FILE_SIZE),
+                                   is_failure=True)
+        return redirect('index')
 
     # create the UploadFileJob
     try:
-        upload_file_job = UploadFileJob.objects.create(filename=data_file.name)
-        # upload_file_job.status = PENDING  # default
+        upload_file_job = UploadFileJob.objects.create(filename=data_file.name)  # status = PENDING
         save_message_and_log_debug(request, "upload_file(): Created the UploadFileJob: {}".format(upload_file_job))
     except Exception as exc:
         save_message_and_log_debug(request, "upload_file(): Error creating the UploadFileJob: {}".format(exc),
                                    is_failure=True)
+        return redirect('index')
 
     # upload the file to S3
     try:
-        s3 = boto3.client('s3')
-        s3.upload_fileobj(data_file, S3_UPLOAD_BUCKET_NAME, upload_file_job.s3_key())
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(S3_UPLOAD_BUCKET_NAME)
+        bucket.put_object(Key=upload_file_job.s3_key(), Body=data_file)
+
         upload_file_job.status = UploadFileJob.S3_FILE_UPLOADED
         upload_file_job.save()
         save_message_and_log_debug(request, "upload_file(): Uploaded the file to S3: {}, {}. upload_file_job={}"
                                    .format(S3_UPLOAD_BUCKET_NAME, upload_file_job.s3_key(), upload_file_job))
     except Exception as exc:
-        upload_file_job.status = UploadFileJob.FAILED_S3_FILE_UPLOAD
+        failure_message = "upload_file(): FAILED_S3_FILE_UPLOAD: Error uploading file to S3: {}. upload_file_job={}" \
+            .format(exc, upload_file_job)
+        upload_file_job.is_failed = True
+        upload_file_job.failure_message = failure_message
         upload_file_job.save()
-        save_message_and_log_debug(request,
-                                   "upload_file(): Error uploading file to S3: {}. upload_file_job={}"
-                                   .format(exc, upload_file_job),
-                                   is_failure=True)
+        save_message_and_log_debug(request, failure_message, is_failure=True)
+        return redirect('index')
 
     # enqueue a worker
     try:
@@ -134,12 +146,14 @@ def upload_file(request):
         save_message_and_log_debug(request, "upload_file(): Enqueued the job: {}. upload_file_job={}"
                                    .format(rq_job, upload_file_job))
     except Exception as exc:
-        upload_file_job.status = UploadFileJob.FAILED_ENQUEUE
+        failure_message = "upload_file(): FAILED_ENQUEUE: Error enqueuing the job: {}. upload_file_job={}" \
+            .format(exc, upload_file_job)
+        upload_file_job.is_failed = True
+        upload_file_job.failure_message = failure_message
         upload_file_job.save()
         upload_file_job.delete_s3_object()  # NB: in current thread
-        save_message_and_log_debug(request, "upload_file(): Error enqueuing the job: {}. upload_file_job={}"
-                                   .format(exc, upload_file_job),
-                                   is_failure=True)
+        save_message_and_log_debug(request, failure_message, is_failure=True)
+        return redirect('index')
 
     logger.debug("upload_file(): Done")
     return redirect('index')
