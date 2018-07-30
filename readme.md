@@ -32,6 +32,7 @@ python3 manage.py rqstats --interval 1
 cd ~/IdeaProjects/django-redis-play
 pipenv shell
 export PATH="/Applications/Postgres.app/Contents/Versions/9.6/bin:${PATH}" ; export DJANGO_SETTINGS_MODULE=forecast_repo.settings.local_sqlite3 ; export PYTHONPATH=.
+export AWS_ACCESS_KEY_ID=<YOUR_ACCESS_KEY> ; export AWS_SECRET_ACCESS_KEY=<YOUR_SECRET_KEY>
 python3 manage.py runserver --settings=forecast_repo.settings.local_sqlite3
 ```
 
