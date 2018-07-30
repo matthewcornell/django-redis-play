@@ -28,17 +28,12 @@ def index(request):
 
 
 def list_s3_buckets(request):
-    # get all s3 keys in all buckets
     keys = []
     s3 = boto3.resource('s3')
-    for bucket in s3.buckets.all():
-        for key in bucket.objects.all():
-            print(key.key)
-            keys.append(key)
-
-    return render(request,
-                  's3.html',
-                  context={'s3_bucket_keys': keys})
+    bucket = s3.Bucket(S3_UPLOAD_BUCKET_NAME)
+    for bucket in bucket.objects.all():
+        keys.append(bucket)
+    return render(request, 's3.html', context={'s3_bucket_keys': keys})
 
 
 #

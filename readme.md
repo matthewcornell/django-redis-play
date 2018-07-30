@@ -3,7 +3,7 @@ A Simple Django app to demonstrate Redis Queue (RQ) integration, with deployment
 
 # TODO
 
-- explore whether the 'dev' user in the 'developers' group can do anything to any bucket or object:
+- ! explore whether the 'dev' user in the 'developers' group can do anything to any bucket or object:
   https://console.aws.amazon.com/iam/home?region=us-east-1#/groups/developers
 
 
