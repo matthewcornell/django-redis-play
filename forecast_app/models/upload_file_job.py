@@ -1,5 +1,6 @@
 import logging
 import tempfile
+import time
 
 import boto3
 from django.db import models
@@ -133,6 +134,7 @@ class UploadFileJob(models.Model):
                 upload_file_job.save()
 
                 logger.debug("process_uploaded_file(): Loading forecast. upload_file_job={}".format(upload_file_job))
+                time.sleep(10)  # simulates a long-running operation
                 # new_forecast = load_forecast()  # todo
                 # upload_file_job.new_forecast_pk = new_forecast.pk
                 upload_file_job.status = UploadFileJob.FORECAST_LOADED  # yay!
