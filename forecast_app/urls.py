@@ -12,4 +12,6 @@ urlpatterns = [
     url(r'^upload_file/$', views.upload_file, name='upload-file'),
     url(r'^delete_file_jobs/$', views.delete_file_jobs, name='delete-file-jobs'),
 
+    url(r'^s3_buckets/$', views.list_s3_buckets, name='s3-buckets'),
+
 ]

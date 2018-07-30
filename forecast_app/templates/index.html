@@ -9,9 +9,11 @@
 
 
 {% if messages %}
-    {% for message in messages %}
-        <div style="color: red;" class="alert alert-{{ message.level_tag }}">{{ message }}</div>
-    {% endfor %}
+    <ul>
+        {% for message in messages %}
+            <li style="color: red;" class="alert alert-{{ message.level_tag }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
 {% endif %}
 
 
@@ -58,6 +60,11 @@
 {% else %}
     <p>(No jobs)</p>
 {% endif %}
+
+
+<h1>S3</h1>
+
+<p><a href="{% url 's3-buckets' %}">S3 Buckets</a></p>
 
 
 <h1>RQ</h1>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redis Test</title>
+</head>
+
+<body>
+
+
+<h1>S3</h1>
+
+<p>Keys: ({{ s3_bucket_keys|length }})</p>
+<ul>
+    {% for s3_bucket_key in s3_bucket_keys %}
+        <li>{{ s3_bucket_key }}</li>
+    {% endfor %}
+</ul>
+
+
+</body>
+
+</html>

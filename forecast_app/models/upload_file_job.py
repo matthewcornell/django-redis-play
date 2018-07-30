@@ -28,12 +28,10 @@ class UploadFileJob(models.Model):
     QUEUED = 2
     S3_FILE_DOWNLOADED = 3
     FORECAST_LOADED = 4
-    S3_FILE_DELETED = 5
 
     FAILED_S3_FILE_UPLOAD = 6
     FAILED_ENQUEUE = 7
     FAILED_PROCESS_FILE = 8
-    FAILED_S3_FILE_DELETE = 9
 
     STATUS_CHOICES = (
         (PENDING, 'PENDING'),
@@ -41,14 +39,14 @@ class UploadFileJob(models.Model):
         (QUEUED, 'QUEUED'),
         (S3_FILE_DOWNLOADED, 'S3_FILE_DOWNLOADED'),
         (FORECAST_LOADED, 'FORECAST_LOADED'),
-        (S3_FILE_DELETED, 'S3_FILE_DELETED'),
 
         (FAILED_S3_FILE_UPLOAD, 'FAILED_S3_FILE_UPLOAD'),
         (FAILED_ENQUEUE, 'FAILED_ENQUEUE'),
         (FAILED_PROCESS_FILE, 'FAILED_PROCESS_FILE'),
-        (FAILED_S3_FILE_DELETE, 'FAILED_S3_FILE_DELETE'),
     )
     status = models.IntegerField(default=PENDING, choices=STATUS_CHOICES)
+
+    is_deleted = models.BooleanField(default=False)  # True if the S3 file was ever deleted by this app
 
 
     # model_pk = models.IntegerField()  # placeholder for: forecast_model = models.ForeignKey(ForecastModel, ...)
@@ -66,7 +64,7 @@ class UploadFileJob(models.Model):
 
 
     def __repr__(self):
-        return str((self.pk, self.created_at, self.filename, self.status_as_str()))
+        return str((self.pk, self.created_at, self.filename, self.status_as_str(), self.is_deleted))
 
 
     def __str__(self):  # todo
@@ -109,12 +107,10 @@ class UploadFileJob(models.Model):
             logger.debug("delete_s3_object(): Started: {}".format(self))
             s3 = boto3.client('s3')
             s3.delete_object(Bucket=S3_UPLOAD_BUCKET_NAME, Key=self.s3_key())
-            self.status = UploadFileJob.S3_FILE_DELETED
+            self.is_deleted = True
             self.save()
             logger.debug("delete_s3_object(): Done: {}".format(self))
         except Exception as exc:
-            self.status = UploadFileJob.FAILED_S3_FILE_DELETE
-            self.save()
             logger.debug("delete_s3_object(): Failed: {}, {}".format(exc, self))
 
 

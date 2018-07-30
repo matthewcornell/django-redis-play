@@ -22,20 +22,35 @@ def index(request):
                            'last_update': last_update,
                            'queue': queue,
                            'conn': conn,
-                           'upload_file_jobs': UploadFileJob.objects.all()}
+                           'upload_file_jobs': UploadFileJob.objects.all(),
+                           }
                   )
+
+
+def list_s3_buckets(request):
+    # get all s3 keys in all buckets
+    keys = []
+    s3 = boto3.resource('s3')
+    for bucket in s3.buckets.all():
+        for key in bucket.objects.all():
+            print(key.key)
+            keys.append(key)
+
+    return render(request,
+                  's3.html',
+                  context={'s3_bucket_keys': keys})
 
 
 #
 # utilities
 #
 
-def save_message_and_log_debug(request, sender, message, is_failure=False):
+def save_message_and_log_debug(request, message, is_failure=False):
     if not is_failure:
-        logger.debug("{}: {}".format(sender, message))
+        logger.debug(message)
         messages.success(request, message)
     else:
-        logger.error("{}: {}".format(sender, message))
+        logger.error(message)
         messages.error(request, message)
 
 
@@ -46,10 +61,10 @@ def save_message_and_log_debug(request, sender, message, is_failure=False):
 def increment_counter(request, **kwargs):
     if kwargs['is_rq']:
         django_rq.enqueue(Counter.increment_count)  # name="default"
-        save_message_and_log_debug(request, 'increment_counter()', "Incremented the count - enqueued.")
+        save_message_and_log_debug(request, "increment_counter(): Incremented the count - enqueued.")
     else:
         Counter.increment_count()
-        save_message_and_log_debug(request, 'increment_counter()', "Incremented the count - immediate.")
+        save_message_and_log_debug(request, "increment_counter(): Incremented the count - immediate.")
     return redirect('index')
 
 
@@ -60,7 +75,7 @@ def increment_counter(request, **kwargs):
 def empty_rq(request):
     queue = django_rq.get_queue()  # name='default'
     queue.empty()
-    messages.success(request, "Emptied the queue.")
+    save_message_and_log_debug(request, "empty_rq(): Emptied the queue.")
     return redirect('index')
 
 
@@ -69,9 +84,9 @@ def empty_rq(request):
 #
 
 def delete_file_jobs(request):
-    save_message_and_log_debug(request, 'delete_file_jobs()', "Deleting all UploadFileJobs: {}")
+    save_message_and_log_debug(request, "delete_file_jobs(): Deleting all UploadFileJobs")
     UploadFileJob.objects.all().delete()  # pre_delete() signal deletes corresponding S3 object (the uploaded file)
-    save_message_and_log_debug(request, 'delete_file_jobs()', "Done")
+    save_message_and_log_debug(request, "delete_file_jobs(): Done")
     return redirect('index')
 
 
@@ -84,7 +99,7 @@ def upload_file(request):
     todo use chunks? for chunk in data_file.chunks(): print(chunk)
     """
     if 'data_file' not in request.FILES:  # user submitted without specifying a file to upload
-        messages.error(request, "No file selected to upload.")
+        save_message_and_log_debug(request, "upload_file(): No file selected to upload.", is_failure=True)
         return redirect('index')
 
     data_file = request.FILES['data_file']  # InMemoryUploadedFile or TemporaryUploadedFile
@@ -94,10 +109,10 @@ def upload_file(request):
     try:
         upload_file_job = UploadFileJob.objects.create(filename=data_file.name)
         # upload_file_job.status = PENDING  # default
-        save_message_and_log_debug(request, 'upload_file()', "Created the UploadFileJob: {}".format(upload_file_job))
+        save_message_and_log_debug(request, "upload_file(): Created the UploadFileJob: {}".format(upload_file_job))
     except Exception as exc:
-        save_message_and_log_debug(request, 'upload_file()',
-                                   "Error creating the UploadFileJob: {}".format(exc), is_failure=True)
+        save_message_and_log_debug(request, "upload_file(): Error creating the UploadFileJob: {}".format(exc),
+                                   is_failure=True)
 
     # upload the file to S3
     try:
@@ -105,15 +120,15 @@ def upload_file(request):
         s3.upload_fileobj(data_file, S3_UPLOAD_BUCKET_NAME, upload_file_job.s3_key())
         upload_file_job.status = UploadFileJob.S3_FILE_UPLOADED
         upload_file_job.save()
-        save_message_and_log_debug(request, 'upload_file()',
-                                   "Uploaded the file to S3: {}, {}. upload_file_job={}"
+        save_message_and_log_debug(request, "upload_file(): Uploaded the file to S3: {}, {}. upload_file_job={}"
                                    .format(S3_UPLOAD_BUCKET_NAME, upload_file_job.s3_key(), upload_file_job))
     except Exception as exc:
         upload_file_job.status = UploadFileJob.FAILED_S3_FILE_UPLOAD
         upload_file_job.save()
-        save_message_and_log_debug(request, 'upload_file()',
-                                   "Error uploading file to S3: {}. upload_file_job={}"
-                                   .format(exc, upload_file_job), is_failure=True)
+        save_message_and_log_debug(request,
+                                   "upload_file(): Error uploading file to S3: {}. upload_file_job={}"
+                                   .format(exc, upload_file_job),
+                                   is_failure=True)
 
     # enqueue a worker
     try:
@@ -121,14 +136,14 @@ def upload_file(request):
                                    job_id=upload_file_job.rq_job_id())  # name="default"
         upload_file_job.status = UploadFileJob.QUEUED
         upload_file_job.save()
-        save_message_and_log_debug(request, 'upload_file()',
-                                   "Enqueued the job: {}. upload_file_job={}".format(rq_job, upload_file_job))
+        save_message_and_log_debug(request, "upload_file(): Enqueued the job: {}. upload_file_job={}"
+                                   .format(rq_job, upload_file_job))
     except Exception as exc:
         upload_file_job.status = UploadFileJob.FAILED_ENQUEUE
         upload_file_job.save()
         upload_file_job.delete_s3_object()  # NB: in current thread
-        save_message_and_log_debug(request, 'upload_file()',
-                                   "Error enqueuing the job: {}. upload_file_job={}".format(exc, upload_file_job),
+        save_message_and_log_debug(request, "upload_file(): Error enqueuing the job: {}. upload_file_job={}"
+                                   .format(exc, upload_file_job),
                                    is_failure=True)
 
     logger.debug("upload_file(): Done")
