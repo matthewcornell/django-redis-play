@@ -28,12 +28,25 @@ def index(request):
 
 
 def list_s3_bucket_info(request):
-    s3_objects = []
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(S3_UPLOAD_BUCKET_NAME)
+    s3_objects = []
     for s3_object in bucket.objects.all():
         s3_objects.append(s3_object)
     return render(request, 's3.html', context={'s3_objects': s3_objects})
+
+
+#
+# S3-related functions
+#
+
+def empty_s3_bucket(request):
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(S3_UPLOAD_BUCKET_NAME)
+    for s3_object in bucket.objects.all():
+        s3_object.delete()
+    save_message_and_log_debug(request, "empty_s3_bucket(): All objects deleted.")
+    return redirect('s3-bucket')
 
 
 #

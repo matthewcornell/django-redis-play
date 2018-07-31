@@ -13,5 +13,6 @@ urlpatterns = [
     url(r'^delete_file_jobs/$', views.delete_file_jobs, name='delete-file-jobs'),
 
     url(r'^s3_bucket/$', views.list_s3_bucket_info, name='s3-bucket'),
+    url(r'^empty_s3_bucket/$', views.empty_s3_bucket, name='empty-s3-bucket'),
 
 ]
