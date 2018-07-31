@@ -22,7 +22,7 @@ def index(request):
                            'updated_at': last_update,
                            'queue': queue,
                            'conn': conn,
-                           'upload_file_jobs': UploadFileJob.objects.all(),
+                           'upload_file_jobs': UploadFileJob.objects.all().order_by('-updated_at'),
                            }
                   )
 
@@ -101,19 +101,30 @@ def delete_file_jobs(request):
     return redirect('index')
 
 
-def upload_file(request):
+def upload_file(request):  # >> todo xx pass concrete class, such as upload_forecast_file()
+    def create_upload_file_job_fcn(request, data_file):
+        return UploadFileJob.objects.create(filename=data_file.name)  # status = PENDING
+
+
+    return _upload_file(request, create_upload_file_job_fcn)
+
+
+def _upload_file(request, create_upload_file_job_fcn):
     """
     Accepts a file uploaded to this app by the user and then saves it in an S3 bucket.
     The S3 object key used for the uploaded file is a UploadFileJob's pk that is created to represent this job.
     The RQ Job.id used is also the UploadFileJob's pk.
 
     todo use chunks? for chunk in data_file.chunks(): print(chunk)
+
+    :param create_upload_file_job_fcn: a function of two args (request, data_file) that returns a new UploadFileJob
+        subclass instance that's initialized according the the args. data_file is an UploadedFile instance
     """
     if 'data_file' not in request.FILES:  # user submitted without specifying a file to upload
         save_message_and_log_debug(request, "upload_file(): No file selected to upload.", is_failure=True)
         return redirect('index')
 
-    data_file = request.FILES['data_file']  # InMemoryUploadedFile or TemporaryUploadedFile
+    data_file = request.FILES['data_file']  # UploadedFile (InMemoryUploadedFile or TemporaryUploadedFile)
     logger.debug("upload_file(): Got data_file: name={!r}, size={}, content_type={}"
                  .format(data_file.name, data_file.size, data_file.content_type))
     if data_file.size > MAX_UPLOAD_FILE_SIZE:
@@ -124,10 +135,7 @@ def upload_file(request):
 
     # create the UploadFileJob
     try:
-
-        # >> todo xx abstract this: concrete class. might take additional args, e.g., model_pk
-        upload_file_job = UploadFileJob.objects.create(filename=data_file.name)  # status = PENDING
-
+        upload_file_job = create_upload_file_job_fcn(request, data_file)  # this function's only concrete-specific line
         save_message_and_log_debug(request, "upload_file(): Created the UploadFileJob: {}".format(upload_file_job))
     except Exception as exc:
         save_message_and_log_debug(request, "upload_file(): Error creating the UploadFileJob: {}".format(exc),
