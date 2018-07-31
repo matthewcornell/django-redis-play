@@ -3,6 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Redis Test</title>
+
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            border-color: #cccccc; /* grey */
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-color: #cccccc; /* grey */
+        }
+    </style>
 </head>
 
 <body>
@@ -50,13 +64,33 @@
 </form>
 
 {% if upload_file_jobs %}
-    <ul>
+    <br>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>pk</th>
+            <th>created_at</th>
+            <th>updated_at</th>
+            <th>filename</th>
+            <th>status_as_str</th>
+            <th>is_failed</th>
+            <th>failure_message</th>
+        </tr>
+        </thead>
+        <tbody>
         {% for upload_file_job in upload_file_jobs %}
-            <li>
-                {{ upload_file_job }}
-            </li>
+            <tr>
+                <td>{{ upload_file_job.pk }}</td>
+                <td>{{ upload_file_job.created_at|date:"Y-m-d h:i:s" }}</td>
+                <td>{{ upload_file_job.updated_at|date:"Y-m-d h:i:s" }}</td>
+                <td>{{ upload_file_job.filename }}</td>
+                <td>{{ upload_file_job.status_as_str }}</td>
+                <td>{{ upload_file_job.is_failed }}</td>
+                <td>{{ upload_file_job.failure_message }}</td>
+            </tr>
         {% endfor %}
-    </ul>
+        </tbody>
+    </table>
 {% else %}
     <p>(No jobs)</p>
 {% endif %}
