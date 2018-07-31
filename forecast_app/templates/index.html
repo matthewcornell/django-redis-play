@@ -63,12 +63,12 @@
         <thead>
         <tr>
             <th>pk</th>
-            <th>created_at</th>
-            <th>updated_at</th>
-            <th>filename</th>
-            <th>status_as_str</th>
-            <th>is_failed</th>
-            <th>failure_message</th>
+            <th>Created</th>
+            <th>Updated</th>
+            <th>File Name</th>
+            <th>Status</th>
+            <th>Failed?</th>
+            <th>&Delta;T</th>
         </tr>
         </thead>
         <tbody>
@@ -79,8 +79,8 @@
                 <td>{{ upload_file_job.updated_at|date:"Y-m-d h:i:s" }}</td>
                 <td>{{ upload_file_job.filename }}</td>
                 <td>{{ upload_file_job.status_as_str }}</td>
-                <td>{{ upload_file_job.is_failed }}</td>
-                <td>{{ upload_file_job.failure_message }}</td>
+                <td>{% if upload_file_job.is_failed %}{{ upload_file_job.failure_message }}{% else %}No{% endif %}</td>
+                <td>{{ upload_file_job.elapsed_time }}</td>
             </tr>
         {% endfor %}
         </tbody>

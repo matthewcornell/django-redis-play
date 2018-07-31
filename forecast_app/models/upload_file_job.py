@@ -1,6 +1,7 @@
 import logging
 import tempfile
 import time
+from io import SEEK_END
 
 import boto3
 from django.db import models
@@ -29,14 +30,14 @@ class UploadFileJob(models.Model):
     S3_FILE_UPLOADED = 1
     QUEUED = 2
     S3_FILE_DOWNLOADED = 3
-    FORECAST_LOADED = 4
+    SUCCESS = 4
 
     STATUS_CHOICES = (
         (PENDING, 'PENDING'),
         (S3_FILE_UPLOADED, 'S3_FILE_UPLOADED'),
         (QUEUED, 'QUEUED'),
         (S3_FILE_DOWNLOADED, 'S3_FILE_DOWNLOADED'),
-        (FORECAST_LOADED, 'FORECAST_LOADED'),
+        (SUCCESS, 'SUCCESS'),
     )
     status = models.IntegerField(default=PENDING, choices=STATUS_CHOICES)
 
@@ -48,18 +49,19 @@ class UploadFileJob(models.Model):
 
     failure_message = models.CharField(max_length=2000)  # non-empty if is_failed
 
+    filename = models.CharField(max_length=200)  # original name of the uploaded file
+
+
     #
     # user-related fields
     #
 
     # user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)  # user who submitted
 
+
     #
     # app-specific fields
     #
-
-    filename = models.CharField(max_length=200)  # original name of the uploaded file
-
 
     # model_pk = models.IntegerField()  # placeholder for: forecast_model = models.ForeignKey(ForecastModel, ...)
 
@@ -70,6 +72,11 @@ class UploadFileJob(models.Model):
     #     help_text="The optional database date at which models should work with for the timezero_date.")  # nullable
 
     # new_forecast_pk (FK, NULL)  # aka the result
+
+
+    # >> todo xx abstract this class
+    # class Meta:
+    #     abstract = True
 
 
     def __repr__(self):
@@ -87,6 +94,10 @@ class UploadFileJob(models.Model):
                 return status_name
 
         return None
+
+
+    def elapsed_time(self):
+        return self.updated_at - self.created_at
 
 
     #
@@ -115,7 +126,7 @@ class UploadFileJob(models.Model):
         failing to delete a temporary file is not a failure to process an uploaded file. Though it's not clear when
         delete would fail but everything preceding it would succeed...
 
-        Apps can infer this condition by looking for non-deleted S3 objects whose status != FORECAST_LOADED .
+        Apps can infer this condition by looking for non-deleted S3 objects whose status != SUCCESS .
         """
         try:
             logger.debug("delete_s3_object(): Started: {}".format(self))
@@ -134,7 +145,6 @@ class UploadFileJob(models.Model):
         """
         upload_file_job = get_object_or_404(UploadFileJob, pk=upload_file_job_pk)
         logger.debug("process_uploaded_file(): Started. upload_file_job={}".format(upload_file_job))
-
         with tempfile.TemporaryFile() as temp_fp:
             try:
                 logger.debug("process_uploaded_file(): Downloading from S3: {}, {}. upload_file_job={}"
@@ -144,13 +154,18 @@ class UploadFileJob(models.Model):
                 upload_file_job.status = UploadFileJob.S3_FILE_DOWNLOADED
                 upload_file_job.save()
 
+                # >> todo xx abstract this, e.g., upload_file_job.process_s3_file()
                 logger.debug("process_uploaded_file(): Loading forecast. upload_file_job={}".format(upload_file_job))
                 time.sleep(5)  # simulates a long-running operation
-                # new_forecast = load_forecast()  # todo the actual work!
+                # file_size = temp_fp.seek(0, SEEK_END)
+                # temp_fp.seek(0)
+                # lines = temp_fp.readlines()
+                # new_forecast = load_forecast()  # todo the actual work :-)
                 # upload_file_job.new_forecast_pk = new_forecast.pk
-                upload_file_job.status = UploadFileJob.FORECAST_LOADED  # yay!
-                upload_file_job.save()
+                # upload_file_job.save()
 
+                upload_file_job.status = UploadFileJob.SUCCESS  # yay!
+                upload_file_job.save()
                 logger.debug("process_uploaded_file(): Done. upload_file_job={}".format(upload_file_job))
             except Exception as exc:
                 failure_message = "process_uploaded_file(): FAILED_PROCESS_FILE: Error: {}. upload_file_job={}" \

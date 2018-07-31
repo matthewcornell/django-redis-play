@@ -124,7 +124,10 @@ def upload_file(request):
 
     # create the UploadFileJob
     try:
+
+        # >> todo xx abstract this: concrete class. might take additional args, e.g., model_pk
         upload_file_job = UploadFileJob.objects.create(filename=data_file.name)  # status = PENDING
+
         save_message_and_log_debug(request, "upload_file(): Created the UploadFileJob: {}".format(upload_file_job))
     except Exception as exc:
         save_message_and_log_debug(request, "upload_file(): Error creating the UploadFileJob: {}".format(exc),
