@@ -69,6 +69,8 @@
             <th>Status</th>
             <th>Failed?</th>
             <th>&Delta;T</th>
+            <th>JSON In</th>
+            <th>JSON Out</th>
         </tr>
         </thead>
         <tbody>
@@ -81,6 +83,8 @@
                 <td>{{ upload_file_job.status_as_str }}</td>
                 <td>{% if upload_file_job.is_failed %}{{ upload_file_job.failure_message }}{% else %}No{% endif %}</td>
                 <td>{{ upload_file_job.elapsed_time }}</td>
+                <td>{{ upload_file_job.input_json }}</td>
+                <td>{{ upload_file_job.output_json }}</td>
             </tr>
         {% endfor %}
         </tbody>

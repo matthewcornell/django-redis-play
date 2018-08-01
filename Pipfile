@@ -14,5 +14,6 @@ whitenoise = "*"
 "boto3" = "*"
 "psycopg2-binary" = "*"
 awscli = "*"
+jsonfield = "*"
 
 [dev-packages]

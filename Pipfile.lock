@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "65e8188bd9f7e1e22007bb2f92951597904a55e43c7c7241c6496c07f598653a"
+            "sha256": "95f79f5bf9e8e0dcc82d9b9c6ca39378139aba95791aa559c22a2c9ea91d860e"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -16,26 +16,26 @@
     "default": {
         "awscli": {
             "hashes": [
-                "sha256:7d19dbc1af80434108173187cf3adde90dde3487c6dd76685f642c99c8a94b1f",
-                "sha256:a2d3ef7902341b7c1d4b1e3fa2e5d9da5ee5a48844bb9b86ae3fa3c77d643354"
+                "sha256:456fb8ff02d0391da417a35dcc8725d558ab4d9c706d2cc7a38b3f9309b8bc73",
+                "sha256:af5c85fab4538de9dfe527f50dc703f9866fb57b4f6099e8244819bad057a8f9"
             ],
             "index": "pypi",
-            "version": "==1.15.67"
+            "version": "==1.15.68"
         },
         "boto3": {
             "hashes": [
-                "sha256:3ec81575237a56a3cc31e963bb7ef8847752b41dd8343a8a758d466830215772",
-                "sha256:8f0f16ad7a6672b7748f2fa753f44007ada17ffb8767bb59dbd73f26ec6d265a"
+                "sha256:c848ae99e09f2899c5f81b8fdad90b2ef1fb7a760b13f2b1e51a345f4fd11d2b",
+                "sha256:e225d9fa3f313049547bf510a54d5f0af82f70d53fe0c0f891a0a9f8d4474681"
             ],
             "index": "pypi",
-            "version": "==1.7.66"
+            "version": "==1.7.67"
         },
         "botocore": {
             "hashes": [
-                "sha256:cc09308c7923331a330d02df055a966bd28657cb7b68b00ea1f3264599df133b",
-                "sha256:e8e120af179aef5df247178c94627836239c1ffb22694087d48e3fc57af3062e"
+                "sha256:e578f2618d0076950bcbd6ac938471310b08c292277b49092b938c59788012a6",
+                "sha256:e9eea23c566c30c69879941c4183294b7d45d8d8ff7946669364d8bb48ed0c90"
             ],
-            "version": "==1.10.66"
+            "version": "==1.10.67"
         },
         "click": {
             "hashes": [
@@ -98,6 +98,14 @@
                 "sha256:f11b4461f425740a1d908e9a3f7365c3d2e569f6ca68a2ff8bc5bcd9676edd63"
             ],
             "version": "==0.9.3"
+        },
+        "jsonfield": {
+            "hashes": [
+                "sha256:a0a7fdee736ff049059409752b045281a225610fecbda9b9bd588ba976493c12",
+                "sha256:beb1cd4850d6d6351c32daefcb826c01757744e9c863228a642f87a1a4acb834"
+            ],
+            "index": "pypi",
+            "version": "==2.0.2"
         },
         "psycopg2-binary": {
             "hashes": [
