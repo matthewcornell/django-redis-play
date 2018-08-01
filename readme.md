@@ -1,10 +1,14 @@
 A Simple Django app to demonstrate Redis Queue (RQ) integration, with deployment to Heroku.
 
 
-# TODO
+# AWS S3 configuration
 
-- ! explore whether the 'dev' user in the 'developers' group can do anything to any bucket or object:
-  https://console.aws.amazon.com/iam/home?region=us-east-1#/groups/developers
+You'll need to set two S3-related environment variables, either locally or, for Heroku:
+```bash
+heroku config:set \
+  AWS_ACCESS_KEY_ID=<YOUR_ACCESS_KEY> \
+  AWS_SECRET_ACCESS_KEY=<YOUR_SECRET_KEY>
+```
 
 
 # To run locally
